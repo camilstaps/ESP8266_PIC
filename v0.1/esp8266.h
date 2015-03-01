@@ -1,6 +1,18 @@
-/* 
- * File:   esp8266.h
- * Author: Camil Staps <info@camilstaps.nl>
+/**
+ * File:    esp8266.h
+ * Author:  Camil Staps <info@camilstaps.nl>
+ * Website: http://github.com/camilstaps/ESP8266_PIC
+ * Version: 0.1
+ *
+ * See:     esp8266.c
+ *
+ * This is the header file for the ESP8266 PIC18 library. It contains:
+ *
+ *  * Constants and bitmasks
+ *  * Prototypes for functions that should be written by the user for his
+ *    implementation
+ *  * Prototypes for functions that can be used by the user
+ *  * Prototypes for functions that are intended for internal use only
  */
 
 #include <stdbool.h>
@@ -11,6 +23,8 @@
 #ifdef	__cplusplus
 extern "C" {
 #endif
+
+/** Some constants **/
 
 #define ESP8266_STATION 0x01
 #define ESP8266_SOFTAP 0x02
@@ -23,8 +37,15 @@ extern "C" {
 #define ESP8266_FAIL 3
 #define ESP8266_NOCHANGE 4
 
+/** Should be witten by the user for input from / output to the ESP module **/
+
+void _esp8266_putch(unsigned char);
+unsigned char _esp8266_getch(void);
+
+/** Function prototypes **/
+
 bit esp8266_isStarted(void);        // Check if the module is started (AT)
-void esp8266_restart(void);         // Restart module (AT+RST)
+bit esp8266_restart(void);          // Restart module (AT+RST)
 void esp8266_echoCmds(bool);        // Enabled/disable command echoing (ATE)
 
 // WIFI Mode (station/softAP/station+softAP) (AT+CWMODE)
@@ -45,11 +66,8 @@ bit esp8266_start(bit protocol, char* ip, unsigned char port);
 // Send data (AT+CIPSEND)
 bit esp8266_send(unsigned char*);
 
-// User implementation: in and output
-void _esp8266_putch(unsigned char);
-unsigned char _esp8266_getch(void);
+/** Functions for internal use only **/
 
-// Internal functions
 // Print a string
 void _esp8266_print(unsigned const char *);
 // Wait until the ESP has sent 'OK'
