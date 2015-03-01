@@ -16,6 +16,7 @@
  */
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifndef ESP8266_H
 #define	ESP8266_H
@@ -68,15 +69,17 @@ bit esp8266_start(unsigned char protocol, char* ip, unsigned char port);
 // Send data (AT+CIPSEND)
 bit esp8266_send(unsigned char*);
 
+// Receive data (+IPD)
+void esp8266_receive(unsigned char*, uint16_t, bool);
+
 /** Functions for internal use only **/
 
-// Print a string
+// Print a string to the output
 void _esp8266_print(unsigned const char *);
-// Wait until the ESP has sent 'OK'
-inline void _esp8266_waitOK(void);
-// Wait until the ESP has sent 'ready'
-inline void _esp8266_waitReady(void);
 
+// Wait for a certain string on the input
+inline uint16_t _esp8266_waitFor(unsigned char *);
+// Wait for any response on the input
 inline unsigned char _esp8266_waitResponse(void);
 
 #ifdef	__cplusplus

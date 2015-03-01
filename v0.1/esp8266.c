@@ -60,7 +60,7 @@ void esp8266_echoCmds(bool echo) {
         _esp8266_putch('0');
     }
     _esp8266_print("\r\n");
-    _esp8266_waitOK();
+    _esp8266_waitFor("OK");
 }
 
 /**
@@ -105,7 +105,7 @@ unsigned char esp8266_connect(unsigned char* ssid, unsigned char* pass) {
  */
 void esp8266_disconnect(void) {
     _esp8266_print("AT+CWQAP\r\n");
-    _esp8266_waitOK();
+    _esp8266_waitFor("OK");
 }
 
 /**
@@ -133,7 +133,7 @@ void esp8266_ip(unsigned char* store_in) {
         } while (received >= '0' && received <= '9');
         received = _esp8266_getch();
     }
-    _esp8266_waitOK();
+    _esp8266_waitFor("OK");
 }
 
 /**
@@ -195,6 +195,48 @@ bit esp8266_send(unsigned char* data) {
 }
 
 /**
+ * Read a string of data that is sent to the ESP8266.
+ *
+ * This waits for a +IPD line from the module. If more bytes than the maximum
+ * are received, the remaining bytes will be discarded.
+ *
+ * @param store_in a pointer to a character array to store the data in
+ * @param max_length maximum amount of bytes to read in
+ * @param discard_headers if set to true, we will skip until the first \r\n\r\n,
+ * for HTTP this means skipping the headers.
+ */
+void esp8266_receive(unsigned char* store_in, uint16_t max_length, bool discard_headers) {
+    _esp8266_waitFor("+IPD,");
+    uint16_t length = 0;
+    unsigned char received = _esp8266_getch();
+    do {
+        length = length * 10 + received - '0';
+        received = _esp8266_getch();
+    } while (received >= '0' && received <= '9');
+
+    if (discard_headers) {
+        length -= _esp8266_waitFor("\r\n\r\n");
+    }
+
+    if (length < max_length) {
+        max_length = length;
+    }
+
+    /*sprintf(store_in, "%u,%u:%c%c", length, max_length, _esp8266_getch(), _esp8266_getch());
+    return;*/
+
+    uint16_t i;
+    for (i = 0; i < max_length; i++) {
+        store_in[i] = _esp8266_getch();
+    }
+    store_in[i] = 0;
+    for (; i < length; i++) {
+        _esp8266_getch();
+    }
+    _esp8266_waitFor("OK");
+}
+
+/**
  * Output a string to the ESP module.
  *
  * This is a function for internal use only.
@@ -208,49 +250,29 @@ void _esp8266_print(unsigned const char *ptr) {
 }
 
 /**
- * Wait until we received 'OK' from the ESP.
+ * Wait until we found a string on the input.
  *
- * This is a function for internal use only.
+ * Careful: this will read everything until that string (even if it's never
+ * found). You may lose important data.
  *
- * @see _esp8266_waitResponse for a more general function.
+ * @param string
+ *
+ * @return the number of characters read
  */
-inline void _esp8266_waitOK(void) {
-    bool found_o = 0;
-    bool found_ok = 0;
+inline uint16_t _esp8266_waitFor(unsigned char *string) {
+    unsigned char so_far = 0;
     unsigned char received;
+    uint16_t counter = 0;
     do {
         received = _esp8266_getch();
-        if (found_o) {
-            if (received == 'K') {
-                found_ok = 1;
-            } else {
-                found_o = 0;
-            }
-        } else if (received == 'O') {
-            found_o = 1;
-        }
-    } while (!found_ok);
-}
-
-/**
- * Wait until we received 'ready' from the ESP.
- *
- * This is a function for internal use only.
- *
- * @see _esp8266_waitResponse for a more general function.
- */
-inline void _esp8266_waitReady(void) {
-    unsigned const char* ready = "ready";
-    unsigned char received;
-    unsigned char received_so_far = 0;
-    do {
-        received = _esp8266_getch();
-        if (received == ready[received_so_far]) {
-            received_so_far++;
+        counter++;
+        if (received == string[so_far]) {
+            so_far++;
         } else {
-            received_so_far = 0;
+            so_far = 0;
         }
-    } while (received_so_far < 5);
+    } while (string[so_far] != 0);
+    return counter;
 }
 
 /**
