@@ -24,7 +24,6 @@ bit esp8266_isStarted(void) {
     return (_esp8266_waitResponse() == ESP8266_OK);
 }
 
-// Restart module (AT+RST)
 /**
  * Restart the module
  *
@@ -35,6 +34,9 @@ bit esp8266_isStarted(void) {
  */
 bit esp8266_restart(void) {
     _esp8266_print("AT+RST\r\n");
+    if (_esp8266_waitResponse() != ESP8266_OK) {
+        return false;
+    }
     return (_esp8266_waitResponse() == ESP8266_READY);
 }
 
