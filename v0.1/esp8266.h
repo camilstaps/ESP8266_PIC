@@ -36,6 +36,8 @@ extern "C" {
 #define ESP8266_READY 2
 #define ESP8266_FAIL 3
 #define ESP8266_NOCHANGE 4
+#define ESP8266_LINKED 5
+#define ESP8266_UNLINK 6
 
 /** Should be witten by the user for input from / output to the ESP module **/
 
@@ -61,7 +63,7 @@ void esp8266_disconnect(void);
 void esp8266_ip(char*);
 
 // Create connection (AT+CIPSTART)
-bit esp8266_start(bit protocol, char* ip, unsigned char port);
+bit esp8266_start(unsigned char protocol, char* ip, unsigned char port);
 
 // Send data (AT+CIPSEND)
 bit esp8266_send(unsigned char*);

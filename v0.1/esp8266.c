@@ -11,6 +11,8 @@
  */
 
 #include "esp8266.h"
+#include <stdio.h>
+#include <string.h>
 
 /**
  * Check if the module is started
@@ -145,7 +147,26 @@ void esp8266_ip(unsigned char* store_in) {
  *
  * @return true iff the connection is opened after this.
  */
-bit esp8266_start(bit protocol, char* ip, unsigned char port) {
+bit esp8266_start(unsigned char protocol, char* ip, unsigned char port) {
+    _esp8266_print("AT+CIPSTART=\"");
+    if (protocol == ESP8266_TCP) {
+        _esp8266_print("TCP");
+    } else {
+        _esp8266_print("UDP");
+    }
+    _esp8266_print("\",\"");
+    _esp8266_print(ip);
+    _esp8266_print("\",");
+    unsigned char port_str[5] = "\0\0\0\0";
+    sprintf(port_str, "%u", port);
+    _esp8266_print(port_str);
+    _esp8266_print("\r\n");
+    if (_esp8266_waitResponse() != ESP8266_OK) {
+        return 0;
+    }
+    if (_esp8266_waitResponse() != ESP8266_LINKED) {
+        return 0;
+    }
     return 1;
 }
 
@@ -160,7 +181,17 @@ bit esp8266_start(bit protocol, char* ip, unsigned char port) {
  * @return true iff the data was sent correctly.
  */
 bit esp8266_send(unsigned char* data) {
-    return 1;
+    unsigned char length_str[6] = "\0\0\0\0\0";
+    sprintf(length_str, "%u", strlen(data));
+    _esp8266_print("AT+CIPSEND=");
+    _esp8266_print(length_str);
+    _esp8266_print("\r\n");
+    while (_esp8266_getch() != '>');
+    _esp8266_print(data);
+    if (_esp8266_waitResponse() == ESP8266_OK) {
+        return 1;
+    }
+    return 0;
 }
 
 /**
@@ -232,6 +263,8 @@ inline void _esp8266_waitReady(void) {
  *  * ready
  *  * FAIL
  *  * no change
+ *  * Linked
+ *  * Unlink
  *
  * Not implemented yet:
  *  * DNS fail (or something like that)
@@ -239,16 +272,16 @@ inline void _esp8266_waitReady(void) {
  * @return a constant from esp8266.h describing the status response.
  */
 inline unsigned char _esp8266_waitResponse(void) {
-    unsigned char so_far[4] = {0,0,0,0};
-    unsigned const char lengths[4] = {2,5,4,9};
-    unsigned const char* strings[4] = {"OK", "ready", "FAIL", "no change"};
-    unsigned const char responses[4] = {ESP8266_OK, ESP8266_READY, ESP8266_FAIL, ESP8266_NOCHANGE};
+    unsigned char so_far[6] = {0,0,0,0,0,0};
+    unsigned const char lengths[6] = {2,5,4,9,6,6};
+    unsigned const char* strings[6] = {"OK", "ready", "FAIL", "no change", "Linked", "Unlink"};
+    unsigned const char responses[6] = {ESP8266_OK, ESP8266_READY, ESP8266_FAIL, ESP8266_NOCHANGE, ESP8266_LINKED, ESP8266_UNLINK};
     unsigned char received;
     unsigned char response;
     bool continue_loop = true;
     while (continue_loop) {
         received = _esp8266_getch();
-        for (unsigned char i = 0; i < 4; i++) {
+        for (unsigned char i = 0; i < 6; i++) {
             if (strings[i][so_far[i]] == received) {
                 so_far[i]++;
                 if (so_far[i] == lengths[i]) {
