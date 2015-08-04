@@ -34,8 +34,12 @@
  *  * Prototypes for functions that are intended for internal use only
  */
 
-#include <stdbool.h>
-#include <stdint.h>
+#include <p18f2550.h>
+#include <delays.h>
+#include <portb.h>
+#include <usart.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifndef ESP8266_H
 #define	ESP8266_H
@@ -58,17 +62,25 @@ extern "C" {
 #define ESP8266_NOCHANGE 4
 #define ESP8266_LINKED 5
 #define ESP8266_UNLINK 6
+#define ESP8266_ERROR 7
+#define ESP8266_NO_IP 8
+#define ESP8266_TYPE_ERROR 9
+#define ESP8266_SEND_OK 10
+#define ESP8266_NO_LINK 11
+#define ESP8266_TIMEOUT 255
 
 /** Should be witten by the user for input from / output to the ESP module **/
 
+// Print a string to the output
+void _esp8266_print(unsigned const char *);
 void _esp8266_putch(unsigned char);
 unsigned char _esp8266_getch(void);
 
 /** Function prototypes **/
 
-bit esp8266_isStarted(void);        // Check if the module is started (AT)
-bit esp8266_restart(void);          // Restart module (AT+RST)
-void esp8266_echoCmds(bool);        // Enabled/disable command echoing (ATE)
+unsigned char esp8266_isStarted(void);        // Check if the module is started (AT)
+unsigned char esp8266_restart(void);          // Restart module (AT+RST)
+void esp8266_echoCmds(unsigned char);        // Enabled/disable command echoing (ATE)
 
 // WIFI Mode (station/softAP/station+softAP) (AT+CWMODE)
 void esp8266_mode(unsigned char);
@@ -79,27 +91,37 @@ unsigned char esp8266_connect(unsigned char*, unsigned char*);
 // Disconnect from AP (AT+CWQAP)
 void esp8266_disconnect(void);
 
+// Configuration of SoftAP Mode (AT+CWSAP)
+void SAPmode(unsigned char* ssid, unsigned char* pass, unsigned int channel, unsigned int encryption);
+
+// Multiple connection enable/disable (AT+CIPMUX)
+void multipleConnect(unsigned char mode);
+
+// Server Configuration mode
+void configureServer(unsigned char mode, unsigned char *port);
+
 // Local IP (AT+CIFSR)
-void esp8266_ip(char*);
+void esp8266_ip(unsigned char*);
+
+unsigned char esp8266_mac(unsigned char* store_in);
 
 // Create connection (AT+CIPSTART)
-bit esp8266_start(unsigned char protocol, char* ip, unsigned char port);
+unsigned char esp8266_start(unsigned char protocol, char* ip, unsigned char* port);
 
 // Send data (AT+CIPSEND)
-bit esp8266_send(unsigned char*);
+unsigned char esp8266_send(unsigned char* data, unsigned int length) ;
 
 // Receive data (+IPD)
-void esp8266_receive(unsigned char*, uint16_t, bool);
+void esp8266_receive(unsigned char*, unsigned int, unsigned char);
 
 /** Functions for internal use only **/
 
-// Print a string to the output
-void _esp8266_print(unsigned const char *);
-
 // Wait for a certain string on the input
-inline uint16_t _esp8266_waitFor(unsigned char *);
+ unsigned int _esp8266_waitFor(unsigned char *);
 // Wait for any response on the input
-inline unsigned char _esp8266_waitResponse(void);
+ unsigned char _esp8266_waitResponse(void);
+
+void clear(void);
 
 #ifdef	__cplusplus
 }
