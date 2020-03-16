@@ -33,6 +33,8 @@
 #include <stdio.h>
 #include <string.h>
 
+unsigned char *lit_OK=(unsigned char*)"OK";
+
 /**
  * Check if the module is started
  *
@@ -79,7 +81,7 @@ void esp8266_echoCmds(bool echo) {
         _esp8266_putch('0');
     }
     _esp8266_print("\r\n");
-    _esp8266_waitFor("OK");
+    _esp8266_waitFor(lit_OK);
 }
 
 /**
@@ -124,7 +126,7 @@ unsigned char esp8266_connect(unsigned char* ssid, unsigned char* pass) {
  */
 void esp8266_disconnect(void) {
     _esp8266_print("AT+CWQAP\r\n");
-    _esp8266_waitFor("OK");
+    _esp8266_waitFor(lit_OK);
 }
 
 /**
@@ -152,7 +154,7 @@ void esp8266_ip(unsigned char* store_in) {
         } while (received >= '0' && received <= '9');
         received = _esp8266_getch();
     }
-    _esp8266_waitFor("OK");
+    _esp8266_waitFor(lit_OK);
 }
 
 /**
@@ -225,7 +227,7 @@ bit esp8266_send(unsigned char* data) {
  * for HTTP this means skipping the headers.
  */
 void esp8266_receive(unsigned char* store_in, uint16_t max_length, bool discard_headers) {
-    _esp8266_waitFor("+IPD,");
+    _esp8266_waitFor((unsigned char*)"+IPD,");
     uint16_t length = 0;
     unsigned char received = _esp8266_getch();
     do {
@@ -234,7 +236,7 @@ void esp8266_receive(unsigned char* store_in, uint16_t max_length, bool discard_
     } while (received >= '0' && received <= '9');
 
     if (discard_headers) {
-        length -= _esp8266_waitFor("\r\n\r\n");
+        length -= _esp8266_waitFor((unsigned char*)"\r\n\r\n");
     }
 
     if (length < max_length) {
@@ -252,7 +254,7 @@ void esp8266_receive(unsigned char* store_in, uint16_t max_length, bool discard_
     for (; i < length; i++) {
         _esp8266_getch();
     }
-    _esp8266_waitFor("OK");
+    _esp8266_waitFor(lit_OK);
 }
 
 /**
